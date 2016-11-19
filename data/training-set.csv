@@ -8,6 +8,7 @@ message,message.class,meta
 в час,TIME,
 в два,TIME,
 в 13:10,TIME,
+в 12,TIME,
 в малину,PLACE,малина
 может в малину,PLACE,малина
 привет,CRAP,
