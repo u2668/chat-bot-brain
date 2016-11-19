@@ -1,6 +1,8 @@
 message,message.class,meta
 кто едет,PASSENGER,
 кто повезет,PASSENGER,
++1,PASSENGER,
+меня возьмите,PASSENGER,
 я еду,DRIVER,
 я повезу,DRIVER,
 в час,TIME,
