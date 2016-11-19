@@ -1,9 +1,15 @@
-message,message.class
-кто едет,PASSENGER
-кто повезет,PASSENGER
-я еду,DRIVER
-я повезу,DRIVER
-в час,TIME
-в два,TIME
-в столовку,PLACE
-в малину,PLACE
+message,message.class,meta
+кто едет,PASSENGER,
+кто повезет,PASSENGER,
+я еду,DRIVER,
+я повезу,DRIVER,
+в час,TIME,
+в два,TIME,
+в столовку,PLACE,столовка
+в малину,PLACE,
+привет,CRAP,
+всем привет,CRAP,
+hi,CRAP,
+hello,CRAP,
+ку,CRAP,
+хай,CRAP,

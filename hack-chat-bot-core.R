@@ -36,31 +36,29 @@ ClassifyMessage <- function(message) {
     message.corpus <- CleanChatMessages(message)
     known.terms.level <-
         GetKnownTermsLevel(message.corpus, Terms(bot.state$training.matrix))
-    if (known.terms.level > 0.5) {
-        classification.table <-
-            ClassifyMessageSimply(message.corpus[[1]]$content,
-                                  bot.state$training.table)
-        print(classification.table)
-        if (nrow(classification.table) > 0) {
-            message.class <- classification.table[[1, "message.class"]]
-            message.class.probability <-
-                1 - classification.table[[1, "distance"]]
-            list(
-                message.class = message.class,
-                message.class.probability = message.class.probability,
-                known.terms.level = known.terms.level
-            )
-        } else {
-            UNKNOWN_RESULT
-        }
+    classification.table <-
+        ClassifyMessageSimply(message.corpus[[1]]$content,
+                              bot.state$training.table)
+    if (nrow(classification.table) > 0) {
+        message.class <- classification.table[[1, "message.class"]]
+        message.class.probability <-
+            1 - classification.table[[1, "distance"]]
+        message.class.meta <- classification.table[[1, "meta"]]
+        list(
+            message.class = message.class,
+            message.class.probability = message.class.probability,
+            message.class.meta = message.class.meta,
+            known.terms.level = known.terms.level
+        )
     } else {
         UNKNOWN_RESULT
     }
 }
 
-TrainModelByMessage <- function(message.class, message) {
+TrainModelByMessage <- function(message.class, message, meta) {
     message.class <- URLDecode(message.class)
     message <- URLDecode(message)
+    meta <- URLDecode(meta)
     
     if (is.null(CHAT_MESSAGE_CLASSES[[message.class]])) {
         return(list(error = "Unknown message class specified."))
@@ -69,7 +67,7 @@ TrainModelByMessage <- function(message.class, message) {
     if (message.class == CHAT_MESSAGE_CLASSES$UNKNOWN) {
         return(list(error = "Class UNKNOWN is reserved."))
     }
-
+    
     message.words <- WordTokenizer(message)
     if (length(message.words) == 0) {
         return(list(error = "Empty message specified."))
@@ -78,12 +76,13 @@ TrainModelByMessage <- function(message.class, message) {
     bot.state <<-
         AppendTrainingSetToChatBotState(bot.state,
                                         data.table(message = message,
-                                                   message.class = message.class))
-    print(Terms(bot.state$training.matrix))
+                                                   message.class = message.class,
+                                                   meta = meta))
     list(
         message.class = message.class,
         message.class.probability = 1,
-        known.terms.level = 1
+        known.terms.level = 1,
+        meta = meta
     )
 }
 
@@ -110,15 +109,14 @@ AppendTrainingSetToChatBotState <-
             c(old.state$training.corpus, new.training.corpus)
         new.training.table <- CorpusToDataTable(new.training.corpus)
         new.training.table[, message.class := new.training.set[["message.class"]]]
+        new.training.table[, meta := new.training.set[["meta"]]]
         training.table <-
             rbind(old.state$training.table, new.training.table)
-        print(training.table)
         training.matrix <-
             c(old.state$training.matrix,
               CreateChatMessagesMatrix(new.training.corpus))
         training.model <-
             TrainModel(training.matrix, training.set[["message.class"]])
-        print(training.model)
         list(
             training.set = training.set,
             training.corpus = training.corpus,
@@ -138,7 +136,7 @@ bot.state <- AppendTrainingSetToChatBotState(
         "data/training-set.csv",
         header = T,
         encoding = "UTF-8",
-        colClasses = c("character", "factor")
+        colClasses = c("character", "factor", "factor")
     )
 )
 
