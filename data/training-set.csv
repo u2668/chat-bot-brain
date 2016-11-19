@@ -5,8 +5,9 @@ message,message.class,meta
 я повезу,DRIVER,
 в час,TIME,
 в два,TIME,
-в столовку,PLACE,столовка
-в малину,PLACE,
+в 13:10,TIME,
+в малину,PLACE,малина
+может в малину,PLACE,малина
 привет,CRAP,
 всем привет,CRAP,
 hi,CRAP,
