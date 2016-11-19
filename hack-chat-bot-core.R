@@ -7,6 +7,7 @@ source("chat-message-cleaner.R", encoding = "UTF-8")
 source("chat-message-classification.R", encoding = "UTF-8")
 source("chat-message-simple-classification.R", encoding = "UTF-8")
 source("chat-message-matrix-factory.R", encoding = "UTF-8")
+source("chat-message-time-extractor.R", encoding = "UTF-8")
 source("bootstrap-training-set.R", encoding = "UTF-8")
 
 CHAT_MESSAGE_CLASSES <- list(
@@ -43,7 +44,11 @@ ClassifyMessage <- function(message) {
         message.class <- classification.table[[1, "message.class"]]
         message.class.probability <-
             1 - classification.table[[1, "distance"]]
-        message.class.meta <- classification.table[[1, "meta"]]
+        if (message.class == CHAT_MESSAGE_CLASSES$TIME) {
+            message.class.meta <- ExtractTimeFromChatMessage(message)
+        } else {
+            message.class.meta <- classification.table[[1, "meta"]]
+        }
         list(
             message.class = message.class,
             message.class.probability = message.class.probability,
