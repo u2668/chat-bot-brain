@@ -3,7 +3,8 @@ library(stringi)
 CHAT_MESSAGE_TZ <- "Europe/Moscow"
 
 CHAT_MESSAGE_DATE_FORMATS <- list(
-    "\\d+\\s*:\\s*\\d+" = "%H:%M"
+    "\\d+\\s*:\\s*\\d+" = "%H:%M",
+    "\\d{2}" = "%H"
 )
 
 ExtractTimeFromChatMessage <- function(message) {
