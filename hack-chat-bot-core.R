@@ -60,7 +60,7 @@ ClassifyMessage <- function(message) {
     }
 }
 
-TrainModelByMessage <- function(message.class, message, meta) {
+TrainModelByMessage <- function(message.class, message, meta = "") {
     message.class <- URLDecode(message.class)
     message <- URLDecode(message)
     meta <- URLDecode(meta)
