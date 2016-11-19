@@ -5,7 +5,9 @@ library(RWeka)
 source("url-decode.R", encoding = "UTF-8")
 source("chat-message-cleaner.R", encoding = "UTF-8")
 source("chat-message-classification.R", encoding = "UTF-8")
+source("chat-message-simple-classification.R", encoding = "UTF-8")
 source("chat-message-matrix-factory.R", encoding = "UTF-8")
+source("bootstrap-training-set.R", encoding = "UTF-8")
 
 CHAT_MESSAGE_CLASSES <- list(
     UNKNOWN = "UNKNOWN",
@@ -15,6 +17,9 @@ CHAT_MESSAGE_CLASSES <- list(
     PLACE = "PLACE",
     TIME = "TIME"
 )
+
+UNKNOWN_RESULT <- list(message.class = CHAT_MESSAGE_CLASSES$UNKNOWN,
+                       message.class.probability = 0)
 
 GetChatMessageClasses <- function() {
     bot.state$training.set
@@ -29,27 +34,27 @@ ClassifyMessage <- function(message) {
     message <- URLDecode(message)
     
     message.corpus <- CleanChatMessages(message)
-    print(message.corpus[[1]]$content)
     known.terms.level <-
         GetKnownTermsLevel(message.corpus, Terms(bot.state$training.matrix))
     if (known.terms.level > 0.5) {
-        message.matrix <- CreateChatMessagesMatrix(message.corpus,
-                                                   terms = Terms(bot.state$training.matrix))
-        result <-
-            ClassifyModel(message.matrix, bot.state$training.model)
-        message.class <- result[[1]]
-        message.class.probability <- result[[2]]
-        list(
-            message.class = message.class,
-            message.class.probability = message.class.probability,
-            known.terms.level = known.terms.level
-        )
+        classification.table <-
+            ClassifyMessageSimply(message.corpus[[1]]$content,
+                                  bot.state$training.table)
+        print(classification.table)
+        if (nrow(classification.table) > 0) {
+            message.class <- classification.table[[1, "message.class"]]
+            message.class.probability <-
+                1 - classification.table[[1, "distance"]]
+            list(
+                message.class = message.class,
+                message.class.probability = message.class.probability,
+                known.terms.level = known.terms.level
+            )
+        } else {
+            UNKNOWN_RESULT
+        }
     } else {
-        list(
-            message.class = CHAT_MESSAGE_CLASSES$UNKNOWN,
-            message.class.probability = 0,
-            known.terms.level = known.terms.level
-        )
+        UNKNOWN_RESULT
     }
 }
 
@@ -61,6 +66,10 @@ TrainModelByMessage <- function(message.class, message) {
         return(list(error = "Unknown message class specified."))
     }
     
+    if (message.class == CHAT_MESSAGE_CLASSES$UNKNOWN) {
+        return(list(error = "Class UNKNOWN is reserved."))
+    }
+
     message.words <- WordTokenizer(message)
     if (length(message.words) == 0) {
         return(list(error = "Empty message specified."))
@@ -70,6 +79,7 @@ TrainModelByMessage <- function(message.class, message) {
         AppendTrainingSetToChatBotState(bot.state,
                                         data.table(message = message,
                                                    message.class = message.class))
+    print(Terms(bot.state$training.matrix))
     list(
         message.class = message.class,
         message.class.probability = 1,
@@ -85,6 +95,7 @@ InitChatBotState <- function() {
     list(
         training.set = data.table(),
         training.corpus = training.corpus,
+        training.table = data.table(),
         training.matrix = DocumentTermMatrix(training.corpus),
         training.model = NULL
     )
@@ -97,6 +108,11 @@ AppendTrainingSetToChatBotState <-
             CleanChatMessages(new.training.set[["message"]])
         training.corpus <-
             c(old.state$training.corpus, new.training.corpus)
+        new.training.table <- CorpusToDataTable(new.training.corpus)
+        new.training.table[, message.class := new.training.set[["message.class"]]]
+        training.table <-
+            rbind(old.state$training.table, new.training.table)
+        print(training.table)
         training.matrix <-
             c(old.state$training.matrix,
               CreateChatMessagesMatrix(new.training.corpus))
@@ -106,10 +122,15 @@ AppendTrainingSetToChatBotState <-
         list(
             training.set = training.set,
             training.corpus = training.corpus,
+            training.table = training.table,
             training.matrix = training.matrix,
             training.model = training.model
         )
     }
+
+CorpusToDataTable <- function(training.corpus) {
+    data.table(message = sapply(training.corpus, as.character))
+}
 
 bot.state <- AppendTrainingSetToChatBotState(
     InitChatBotState(),

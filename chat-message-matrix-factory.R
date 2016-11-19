@@ -1,10 +1,18 @@
 library(tm)
 library(RWeka)
 
-CreateChatMessagesMatrix <- function(messages.corpus, terms = NULL) {
-    DocumentTermMatrix(messages.corpus,
-                       control = list(tokenizer = WordTokenizer, dictionary = terms))
-}
+CreateChatMessagesMatrix <-
+    function(messages.corpus, terms = NULL) {
+        DocumentTermMatrix(
+            messages.corpus,
+            control = list(
+                tokenizer = WordTokenizer,
+                weighting = weightTf,
+                wordLengths = c(1, Inf),
+                dictionary = terms
+            )
+        )
+    }
 
 GetKnownTermsLevel <- function(messages.corpus, known.terms) {
     messages.matrix <- CreateChatMessagesMatrix(messages.corpus)
